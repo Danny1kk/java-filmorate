@@ -44,7 +44,7 @@ public class FilmController {
     private void validateFilm(Film film) {
         if (film.getName() == null || film.getName().isBlank()) {
             log.warn("Ошибка валидации: пустое значение");
-            throw new ValidationException("Название не может быть пустым");
+            throw new ValidationException("Название фильма не может быть пустым");
         }
         if (film.getDescription() != null && film.getDescription().length() > 200) {
             throw new ValidationException("Описание не должно превышать 200 символов");

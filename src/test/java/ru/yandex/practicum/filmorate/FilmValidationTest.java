@@ -23,7 +23,7 @@ public class FilmValidationTest {
         film.setReleaseDate(LocalDate.of(2006, 6, 6));
 
         ValidationException e = assertThrows(ValidationException.class, () -> filmController.addFilm(film));
-        assertEquals("Название фильма не может быть пустым", e.getMessage());
+        assertEquals("Название не может быть пустым", e.getMessage());
     }
 
     @Test
