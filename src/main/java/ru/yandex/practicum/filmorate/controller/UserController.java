@@ -1,6 +1,5 @@
 package ru.yandex.practicum.filmorate.controller;
 
-import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 import lombok.extern.slf4j.Slf4j;
 import ru.yandex.practicum.filmorate.model.User;
@@ -18,7 +17,7 @@ public class UserController {
     private int idCounter = 1;
 
     @PostMapping
-    public void addUser(@Valid @RequestBody User user) {
+    public User addUser(@RequestBody User user) {
         validateUser(user);
         user.setId(idCounter++);
         if (user.getName() == null || user.getName().isBlank()) {
@@ -26,6 +25,7 @@ public class UserController {
         }
         users.put(user.getId(), user);
         log.info("Пользователь добавлен: {}", user.getLogin());
+        return user;
     }
 
     @PutMapping
