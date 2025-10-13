@@ -1,8 +1,8 @@
 package ru.yandex.practicum.filmorate.controller;
 
-import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 import lombok.extern.slf4j.Slf4j;
+import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 
@@ -18,22 +18,23 @@ public class FilmController {
     private int idCounter = 1;
 
     @PostMapping
-    public void addFilm(@Valid @RequestBody Film film) {
+    public Film addFilm(@RequestBody Film film) {
         validateFilm(film);
         film.setId(idCounter++);
         films.put(film.getId(), film);
         log.info("Добавлен фильм: {}", film.getName());
+        return film;
     }
 
     @PutMapping
     public Film updateFilm(@RequestBody Film film) {
         validateFilm(film);
         if (!films.containsKey(film.getId())) {
-            throw new ValidationException("Фильм с таким id не найден");
+            throw new NotFoundException("Фильм с таким id не найден");
         }
         films.put(film.getId(), film);
         log.info("Обновлен фильм: {}", film.getName());
-        return film;
+        return films.get(film.getId());
     }
 
     @GetMapping
