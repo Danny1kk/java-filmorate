@@ -16,15 +16,19 @@ public class UserController {
     private final Map<Integer, User> users = new HashMap<>();
     private int idCounter = 1;
 
-    @PostMapping
-    public User addUser(@RequestBody User user) {
-        validateUser(user);
-        user.setId(idCounter++);
+    private void nameLogin(User user) {
         if (user.getName() == null || user.getName().isBlank()) {
             user.setName(user.getLogin());
         }
+    }
+
+    @PostMapping
+    public User addUser(@RequestBody User user) {
+        validateUser(user);
+        nameLogin(user);
+        user.setId(idCounter++);
         users.put(user.getId(), user);
-        log.info("Пользователь добавлен: {}", user.getLogin());
+        log.info("Пользователь добавлен: {}", user);
         return user;
     }
 
@@ -32,18 +36,17 @@ public class UserController {
     public User updateUser(@RequestBody User user) {
         validateUser(user);
         if (!users.containsKey(user.getId())) {
-            throw new ValidationException("Пользователь с таким id не найден");
+            throw new ValidationException("Пользователь с id=" + user.getId() + " не найден");
         }
-        if (user.getName() == null || user.getName().isBlank()) {
-            user.setName(user.getLogin());
-        }
+        nameLogin(user);
         users.put(user.getId(), user);
-        log.info("Пользователь обновлен: {}", user.getLogin());
+        log.info("Пользователь обновлен: {}", user);
         return user;
     }
 
     @GetMapping
     public List<User> getAllUsers() {
+        log.info("Получен запрос на получение списка всех пользователей");
         return new ArrayList<>(users.values());
     }
 
@@ -52,11 +55,8 @@ public class UserController {
             log.warn("Ошибка валидации: некорректный email {}", user.getEmail());
             throw new ValidationException("Некорректный email");
         }
-        if (user.getLogin() == null || user.getLogin().isBlank() && user.getLogin().contains(" ")) {
+        if (user.getLogin() == null || user.getLogin().isBlank() || user.getLogin().contains(" ")) {
             throw new ValidationException("Логин не может быть пустым и содержать пробелы");
-        }
-        if (user.getName() == null || user.getName().isBlank()) {
-            user.setName(user.getLogin());
         }
         if (user.getBirthday() != null && user.getBirthday().isAfter(LocalDate.now())) {
             throw new ValidationException("Дата рождения не может быть в будущем");

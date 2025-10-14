@@ -30,7 +30,7 @@ public class FilmController {
     public Film updateFilm(@RequestBody Film film) {
         validateFilm(film);
         if (!films.containsKey(film.getId())) {
-            throw new NotFoundException("Фильм с таким id не найден");
+            throw new NotFoundException("Фильм с id=" + film.getId() + " не найден");
         }
         films.put(film.getId(), film);
         log.info("Обновлен фильм: {}", film.getName());
@@ -39,6 +39,7 @@ public class FilmController {
 
     @GetMapping
     public List<Film> getAllFilms() {
+        log.info("Получен запрос на получение списка всех фильмов");
         return new ArrayList<>(films.values());
     }
 
@@ -51,8 +52,8 @@ public class FilmController {
             throw new ValidationException("Описание не должно превышать 200 символов");
         }
         LocalDate minDate = LocalDate.of(1895, 12, 28);
-        if (film.getReleaseDate() != null && film.getReleaseDate().isBefore(minDate)) {
-            throw new ValidationException("Дата релиза не может быть раньше 28 декабря 1895 года");
+        if (film.getReleaseDate() == null || film.getReleaseDate().isBefore(minDate)) {
+            throw new ValidationException("Дата релиза должна быть указана и не может быть раньше 28 декабря 1895 года");
         }
         if (film.getDuration() <= 0) {
             throw new ValidationException("Продолжительность фильма должна быть положительной");
