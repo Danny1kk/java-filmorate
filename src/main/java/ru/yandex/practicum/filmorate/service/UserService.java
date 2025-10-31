@@ -60,6 +60,8 @@ public class UserService {
    }
 
    public List<User> getFriends(int id) {
+        getById(id);
+
         return friends.getOrDefault(id, Collections.emptySet())
                 .stream()
                 .map(userStorage::getById)

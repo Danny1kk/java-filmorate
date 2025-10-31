@@ -50,7 +50,7 @@ public class UserController {
         return userService.getById(id);
     }
 
-    @GetMapping("/{id}/friends/{friendId}")
+    @DeleteMapping("/{id}/friends/{friendId}")
     public void removeFriend(@PathVariable int id, @PathVariable int friendId) {
         userService.addFriends(id, friendId);
     }
