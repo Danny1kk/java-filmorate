@@ -37,10 +37,12 @@ public class FilmService {
     }
 
     public void addLike(int filmId, int userId) {
+        filmStorage.getById(filmId);
         likes.computeIfAbsent(filmId, k -> new HashSet<>()).add(userId);
     }
 
     public void removeLike(int filmId, int userId) {
+        filmStorage.getById(filmId);
         likes.getOrDefault(filmId, new HashSet<>()).remove(userId);
     }
 

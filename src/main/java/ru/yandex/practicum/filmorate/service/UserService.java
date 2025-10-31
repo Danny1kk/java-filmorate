@@ -44,13 +44,19 @@ public class UserService {
     }
 
     public void addFriends(int id, int friendId) {
+        userStorage.getById(id);
+        userStorage.getById(friendId);
+
         friends.computeIfAbsent(id, k -> new HashSet<>()).add(friendId);
         friends.computeIfAbsent(friendId, k -> new HashSet<>()).add(id);
     }
 
-   public void remoteFriend(int id, int friendId) {
-        friends.getOrDefault(id, new HashSet<>()).remove(friendId);
-        friends.getOrDefault(friendId, new HashSet<>()).remove(id);
+   public void removeFriend(int id, int friendId) {
+       userStorage.getById(id);
+       userStorage.getById(friendId);
+
+       friends.getOrDefault(id, new HashSet<>()).remove(friendId);
+       friends.getOrDefault(friendId, new HashSet<>()).remove(id);
    }
 
    public List<User> getFriends(int id) {
