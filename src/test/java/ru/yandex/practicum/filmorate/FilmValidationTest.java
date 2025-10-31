@@ -1,11 +1,11 @@
 package ru.yandex.practicum.filmorate;
 
 import org.junit.jupiter.api.Test;
-import ru.yandex.practicum.filmorate.controller.FilmController;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.service.FilmService;
 import ru.yandex.practicum.filmorate.storage.film.InMemoryFilmStorage;
+import ru.yandex.practicum.filmorate.storage.user.InMemoryUserStorage;
 
 import java.time.LocalDate;
 
@@ -14,7 +14,10 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class FilmValidationTest {
 
-    private final FilmController filmController = new FilmController(new FilmService(new InMemoryFilmStorage()));
+    private final InMemoryFilmStorage filmStorage = new InMemoryFilmStorage();
+    private final InMemoryUserStorage userStorage = new InMemoryUserStorage();
+
+    private final FilmService filmService = new FilmService(filmStorage, userStorage);
 
     @Test
     void shouldThrowExceptionIfNameIsEmpty() {
@@ -24,7 +27,7 @@ public class FilmValidationTest {
         film.setDuration(120);
         film.setReleaseDate(LocalDate.of(2006, 6, 6));
 
-        ValidationException e = assertThrows(ValidationException.class, () -> filmController.addFilm(film));
+        ValidationException e = assertThrows(ValidationException.class, () -> filmService.addFilm(film));
         assertEquals("Название фильма не может быть пустым", e.getMessage());
     }
 
@@ -36,6 +39,6 @@ public class FilmValidationTest {
         film.setDuration(-160);
         film.setReleaseDate(LocalDate.of(1894, 12, 6));
 
-        assertThrows(ValidationException.class, () -> filmController.addFilm(film));
+        assertThrows(ValidationException.class, () -> filmService.addFilm(film));
     }
 }
