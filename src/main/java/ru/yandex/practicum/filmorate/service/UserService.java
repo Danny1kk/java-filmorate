@@ -65,8 +65,8 @@ public class UserService {
     }
 
    public void removeFriend(int id, int friendId) {
-       User user = userStorage.getById(id);
-       User friend = userStorage.getById(friendId);
+       User user = getById(id);
+       User friend = getById(friendId);
 
        if (user == null) {
            throw new NotFoundException("Пользователь с id=" + id + " не найден");
