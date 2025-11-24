@@ -14,6 +14,10 @@ public class Film {
     private LocalDate releaseDate;
     private int duration;
 
+    private Set<Integer> genreIds = new HashSet<>();
+
+    private Integer mpaRatingId;
+
     private final Set<Integer> likes = new HashSet<>();
 
     public void addLike(int userId) {
