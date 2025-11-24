@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
+import ru.yandex.practicum.filmorate.model.FriendshipStatus;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
@@ -49,12 +50,22 @@ public class UserService {
     }
 
     public void addFriends(int id, int friendId) {
+        if (id == friendId) {
+            throw new ValidationException("Нельзя добавить самого себя в друзья");
+        }
+
         User user = getById(id);
         User friend = getById(friendId);
 
-        user.getFriends().add(friendId);
-        friend.getFriends().add(id);
-        log.info("Пользователи {} и {} теперь друзья.", id, friendId);
+        FriendshipStatus incoming = friend.getFriends().get(id);
+        if (incoming == FriendshipStatus.UNCONFIRMED) {
+            user.getFriends().put(friendId, FriendshipStatus.CONFIRMED);
+            friend.getFriends().put(id, FriendshipStatus.CONFIRMED);
+            log.info("Пользователи {} и {} теперь друзья (подтверждена заявка).", id, friendId);
+        } else {
+            user.getFriends().put(friendId, FriendshipStatus.UNCONFIRMED);
+            log.info("Пользователь {} отправил заявку в друзья пользователю {}.", id, friendId);
+        }
     }
 
    public void removeFriend(int id, int friendId) {
@@ -63,13 +74,14 @@ public class UserService {
 
        user.getFriends().remove(friendId);
        friend.getFriends().remove(id);
-       log.info("Пользователи {} и {} больше не друзья.", id, friendId);
+       log.info("Пользователи {} и {} больше не друзья (или заявка удалена).", id, friendId);
    }
 
    public List<User> getFriends(int id) {
        User user = getById(id);
-       return user.getFriends()
-               .stream()
+       return user.getFriends().entrySet().stream()
+               .filter(e -> e.getValue() == FriendshipStatus.CONFIRMED)
+               .map(Map.Entry::getKey)
                .map(userStorage::getById)
                .flatMap(Optional::stream)
                .collect(Collectors.toList());
@@ -79,11 +91,19 @@ public class UserService {
         User user = getById(id);
         User otherUser = getById(otherId);
 
-        Set<Integer> commonFriendIds = new HashSet<>(user.getFriends());
+        Set<Integer> userConfirmed = user.getFriends().entrySet().stream()
+                .filter(e -> e.getValue() == FriendshipStatus.CONFIRMED)
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toSet());
 
-        commonFriendIds.retainAll(otherUser.getFriends());
+        Set<Integer> otherConfirmed = otherUser.getFriends().entrySet().stream()
+                .filter(e -> e.getValue() == FriendshipStatus.CONFIRMED)
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toSet());
 
-        return commonFriendIds.stream()
+        userConfirmed.retainAll(otherConfirmed);
+
+        return userConfirmed.stream()
                 .map(userStorage::getById)
                 .flatMap(Optional::stream)
                 .collect(Collectors.toList());
