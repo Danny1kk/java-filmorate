@@ -3,6 +3,7 @@ package ru.yandex.practicum.filmorate;
 
 import org.junit.jupiter.api.Test;
 import ru.yandex.practicum.filmorate.controller.UserController;
+import ru.yandex.practicum.filmorate.dal.dto.user.NewUserRequest;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.service.UserService;
@@ -24,7 +25,7 @@ public class UserValidationTest {
         user.setLogin("user1");
         user.setBirthday(LocalDate.of(2026, 6, 6));
 
-        ValidationException e = assertThrows(ValidationException.class, () -> userController.addUser(user));
+        ValidationException e = assertThrows(ValidationException.class, () -> userController.addUser(new NewUserRequest()));
         assertEquals("Некорректный email", e.getMessage());
     }
 
@@ -36,7 +37,7 @@ public class UserValidationTest {
         user.setName("");
         user.setBirthday(LocalDate.of(1992, 2, 10));
 
-        userController.addUser(user);
+        userController.addUser(new NewUserRequest());
         assertEquals("Tot_samiy_user", user.getName());
     }
 }
