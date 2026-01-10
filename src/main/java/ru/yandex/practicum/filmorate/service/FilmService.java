@@ -108,13 +108,13 @@ public class FilmService {
             throw new ValidationException("Продолжительность фильма должна быть положительной");
         }
 
-        if(film.getRatingId() != null) {
+        if (film.getRatingId() != null) {
             mpaStorage.getById(film.getRatingId())
-                    .orElseThrow(() -> new NotFoundException
-                            ("Система возрастных ограничений (рейтинг MPA) - не найден: " + film.getRatingId()));
+                    .orElseThrow(() -> new NotFoundException(
+                            "Система возрастных ограничений (рейтинг MPA) - не найден: " + film.getRatingId()));
         }
 
-        if(film.getGenreIds() != null && !film.getGenreIds().isEmpty()) {
+        if (film.getGenreIds() != null && !film.getGenreIds().isEmpty()) {
             for (Integer genreId : film.getGenreIds()) {
                 genreStorage.getById(genreId)
                         .orElseThrow(() -> new NotFoundException("Жанры не найдены: " + genreId));
