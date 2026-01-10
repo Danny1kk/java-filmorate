@@ -3,7 +3,6 @@ package ru.yandex.practicum.filmorate.daotests;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.json.AutoConfigureJsonTesters;
 import org.springframework.context.annotation.Import;
 import ru.yandex.practicum.filmorate.dal.rowmappers.UserRowMapper;
 import ru.yandex.practicum.filmorate.model.User;
