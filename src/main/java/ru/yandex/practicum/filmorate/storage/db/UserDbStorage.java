@@ -33,10 +33,22 @@ public class UserDbStorage implements UserStorage {
             PreparedStatement ps = connection.prepareStatement(insertTableQuery, Statement.RETURN_GENERATED_KEYS);
             ps.setString(1, user.getName());
             ps.setString(2, user.getLogin());
-            ps.setString(3, String.valueOf(Date.valueOf(user.getBirthday())));
+            ps.setDate(3, Date.valueOf(user.getBirthday()));
+
+//            if (user.getBirthday() != null) {
+//                ps.setDate(3, Date.valueOf(user.getBirthday()));
+//            } else {
+//                ps.setNull(3, java.sql.Types.DATE);
+//            }
+
             ps.setString(4, user.getEmail());
             return ps;
         }, keyHolder);
+
+//        Number key = keyHolder.getKey();
+//        if (key != null) {
+//            user.setId(key.longValue());
+//        }
         user.setId(Objects.requireNonNull(keyHolder.getKey()).longValue());
         return  user;
     }

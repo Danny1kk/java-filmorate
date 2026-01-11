@@ -10,5 +10,5 @@ public class UpdateUserRequest {
     private String email;
     private String login;
     private String name;
-    private LocalDate birthDate;
+    private LocalDate birthday;
 }

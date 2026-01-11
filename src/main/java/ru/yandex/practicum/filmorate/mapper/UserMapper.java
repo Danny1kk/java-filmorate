@@ -33,7 +33,7 @@ public class UserMapper {
         user.setEmail(request.getEmail());
         user.setName(request.getName());
         user.setLogin(request.getLogin());
-        user.setBirthday(request.getBirthDate());
+        user.setBirthday(request.getBirthday());
         return user;
     }
 }

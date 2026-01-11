@@ -30,7 +30,7 @@ public class GenreDbStorage implements GenreStorage {
     @Override
     public Optional<Genre> getById(Integer id) {
         try {
-            String query = "SELECT * FROM genres WHERE genge_id = ?";
+            String query = "SELECT * FROM genres WHERE genre_id = ?";
             Genre genre = jdbcTemplate.queryForObject(query, mapper, id);
             return Optional.ofNullable(genre);
         } catch (EmptyResultDataAccessException ignored) {
