@@ -62,11 +62,11 @@ public class UserValidationTest {
     void shouldThrowExceptionIfEmailIsWrong() {
         user.setEmail(null);
         ValidationException e = assertThrows(ValidationException.class, () -> addUser(user));
-        assertTrue(e.getMessage().contains("Email не может быть пустой и должен содержать символ '@'"));
+        assertTrue(e.getMessage().contains("Email не может быть пустым и должен содержать символ '@'"));
 
         user.setEmail("wrongemail.ru");
         e = assertThrows(ValidationException.class, () -> addUser(user));
-        assertTrue(e.getMessage().contains("Email не может быть пустой и должен содержать символ '@'"));
+        assertTrue(e.getMessage().contains("Email не может быть пустым и должен содержать символ '@'"));
     }
 
     @Test
