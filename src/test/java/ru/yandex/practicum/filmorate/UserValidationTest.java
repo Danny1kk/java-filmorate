@@ -28,7 +28,7 @@ public class UserValidationTest {
     }
 
     private void validateUser(User user) {
-        if (user.getEmail() == null || !user.getEmail().contains("@gmail.com")) {
+        if (user.getEmail() == null || !user.getEmail().contains("@")) {
             throw  new ValidationException("Email не может быть пустым и должен содержать символ '@'");
         }
         if (user.getLogin() == null || user.getLogin().isBlank() || user.getLogin().contains(" ")) {

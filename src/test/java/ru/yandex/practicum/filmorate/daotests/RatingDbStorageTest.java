@@ -15,7 +15,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @JdbcTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-@SpringBootTest
 @RequiredArgsConstructor(onConstructor_ = @Autowired)
 class RatingDbStorageTest {
 
