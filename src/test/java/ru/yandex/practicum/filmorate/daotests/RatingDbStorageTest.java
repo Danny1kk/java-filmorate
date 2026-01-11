@@ -1,6 +1,5 @@
 package ru.yandex.practicum.filmorate.daotests;
 
-import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
@@ -16,10 +15,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 @JdbcTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Import(RatingDbStorage.class)
-@RequiredArgsConstructor(onConstructor_ = @Autowired)
 class RatingDbStorageTest {
 
     private final RatingDbStorage ratingDbStorage;
+
+    @Autowired
+    public RatingDbStorageTest(RatingDbStorage ratingDbStorage) {
+        this.ratingDbStorage = ratingDbStorage;
+    }
 
     @Test
     void testFindRatingById() {
