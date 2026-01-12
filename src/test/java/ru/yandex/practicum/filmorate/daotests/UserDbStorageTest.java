@@ -12,6 +12,7 @@ import ru.yandex.practicum.filmorate.storage.db.UserDbStorage;
 
 import java.time.LocalDate;
 import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -43,8 +44,14 @@ class UserDbStorageTest {
 
     @Test
     void testGetAllUsers() {
+        User user = new User();
+        user.setEmail("all@email.com");
+        user.setLogin("alllogin");
+        user.setBirthday(LocalDate.of(1990, 1, 1));
+        userStorage.addUser(user);
+
         Collection<User> users = userStorage.getAllUsers();
-        assertThat(users).isNotNull();
+        assertThat(users).isNotEmpty();
     }
 
     @Test
@@ -101,13 +108,12 @@ class UserDbStorageTest {
 
         userStorage.addFriends(created1.getId(), created2.getId());
 
-        userStorage.loadFriends(created1);
-        assertThat(created1.getFriends()).contains(created2.getId());
+        List<User> friends = userStorage.getFriends(created1.getId());
+        assertThat(friends).extracting(User::getId).contains(created2.getId());
 
         userStorage.removeFriends(created1.getId(), created2.getId());
 
-        created1.getFriends().clear();
-        userStorage.loadFriends(created1);
-        assertThat(created1.getFriends()).doesNotContain(created2.getId());
+        List<User> friendsAfterRemoval = userStorage.getFriends(created1.getId());
+        assertThat(friendsAfterRemoval).isEmpty();
     }
 }

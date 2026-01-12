@@ -11,8 +11,10 @@ import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.model.MpaRating;
 
+import java.time.LocalDate;
 import java.util.Collection;
 import java.util.LinkedHashSet;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -21,30 +23,24 @@ public class FilmMapper {
 
     public static Film mapToFilm(NewFilmRequest request) {
         Film film = new Film();
+        fillCommonFields(film, request.getName(), request.getDescription(),
+                request.getReleaseDate(), request.getDuration(),
+                request.getMpa(), request.getGenres());
+        return film;
+    }
 
-        film.setName(request.getName());
-        film.setDescription(request.getDescription());
-        film.setReleaseDate(request.getReleaseDate());
-        film.setDuration(request.getDuration());
-
-        if (request.getMpa() != null && request.getMpa().getId() != null) {
-            film.setRatingId(request.getMpa().getId());
-        }
-
-        if (request.getGenres() != null) {
-            Set<Integer> genreIds = request.getGenres().stream()
-                    .map(GenreDto::getId)
-                    .collect(Collectors.toSet());
-            film.setGenreIds(genreIds);
-        }
-
+    public static Film mapToFilm(UpdateFilmRequest request) {
+        Film film = new Film();
+        film.setId(request.getId());
+        fillCommonFields(film, request.getName(), request.getDescription(),
+                request.getReleaseDate(), request.getDuration(),
+                request.getMpa(), request.getGenres());
         return film;
     }
 
     public static FilmDto mapToFilmDto(Film film, Collection<MpaRating> allMpa,
                                        Collection<Genre> allGenre) {
         FilmDto dto = new FilmDto();
-
         dto.setId(film.getId());
         dto.setName(film.getName());
         dto.setDescription(film.getDescription());
@@ -52,15 +48,15 @@ public class FilmMapper {
         dto.setDuration(film.getDuration());
 
         if (film.getRatingId() != null) {
-            MpaDto mpaDto = new MpaDto();
-            mpaDto.setId(film.getRatingId());
-
-            allMpa.stream()
-                    .filter(m -> m.getId() == film.getRatingId())
+           allMpa.stream()
+                    .filter(m -> Objects.equals(m.getId(), film.getRatingId()))
                     .findFirst()
-                    .ifPresent(m -> mpaDto.setName(m.getName()));
-
-            dto.setMpa(mpaDto);
+                    .ifPresent(m -> {
+                        MpaDto mpaDto = new MpaDto();
+                        mpaDto.setName(m.getName());
+                        mpaDto.setId(m.getId());
+                        dto.setMpa(mpaDto);
+                    });
         }
 
         if (film.getGenreIds() != null && !film.getGenreIds().isEmpty()) {
@@ -85,28 +81,22 @@ public class FilmMapper {
         return dto;
     }
 
-     public static Film updateFilmFields(Film film, UpdateFilmRequest request) {
-        if (request.isNameValid()) {
-            film.setName(request.getName());
-        }
-        if (request.isDescriptionValid()) {
-            film.setDescription(request.getDescription());
-        }
-        if (request.isReleaseDateValid()) {
-            film.setReleaseDate(request.getReleaseDate());
-        }
-        if (request.isDurationValid()) {
-            film.setDuration(request.getDuration());
-        }
-        if (request.isMpaValid()) {
-            film.setRatingId(request.getMpa().getId());
-        }
-        if (request.isGenresValid()) {
-            Set<Integer> genreIds = request.getGenres().stream()
-                    .map(GenreDto::getId)
-                    .collect(Collectors.toSet());
-            film.setGenreIds(genreIds);
-        }
-        return  film;
-    }
+     private static void fillCommonFields(Film film, String name, String description,
+                                          LocalDate releaseDate, Integer duration,
+                                          MpaDto mpa, Set<GenreDto> genres) {
+         film.setName(name);
+         film.setDescription(description);
+         film.setReleaseDate(releaseDate);
+         film.setDuration(duration);
+
+         if (mpa != null) {
+             film.setRatingId(mpa.getId());
+         }
+
+         if (genres != null) {
+             film.setGenreIds(genres.stream()
+                     .map(GenreDto::getId)
+                     .collect(Collectors.toSet()));
+         }
+     }
 }

@@ -3,7 +3,7 @@ Template repository for Filmorate project.
 
 ## Схема базы данных
 
-![Схема — сущности и связь SQL](docs/Схема — сущности и связь SQL.png)
+!(docs/Schema_entities_and_SQL_relationships.png)
 
 ## Примеры SQL-запросов для java-filmorate
 

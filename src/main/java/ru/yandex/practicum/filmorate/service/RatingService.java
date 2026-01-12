@@ -5,23 +5,23 @@ import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.dal.dto.mpa.MpaDto;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.MpaRating;
-import ru.yandex.practicum.filmorate.storage.db.RatingDbStorage;
+import ru.yandex.practicum.filmorate.storage.RatingStorage;
 
 import java.util.Collection;
 
 @Service
 @RequiredArgsConstructor
 public class RatingService {
-    private final RatingDbStorage ratingDbStorage;
+    private final RatingStorage ratingStorage;
 
     public Collection<MpaDto> findAll() {
-        return ratingDbStorage.findAll().stream()
+        return ratingStorage.findAll().stream()
                 .map(this::toDto)
                 .toList();
     }
 
     public MpaDto getById(int id) {
-        MpaRating rating = ratingDbStorage.getById(id)
+        MpaRating rating = ratingStorage.getById(id)
                 .orElseThrow(() -> new NotFoundException("Рейтинг MPA с id = " + id + " не найден"));
         return toDto(rating);
     }

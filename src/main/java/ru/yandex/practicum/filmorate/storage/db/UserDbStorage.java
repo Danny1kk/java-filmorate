@@ -1,6 +1,7 @@
 package ru.yandex.practicum.filmorate.storage.db;
 
-import org.springframework.beans.factory.annotation.Qualifier;
+import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Primary;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
@@ -11,44 +12,28 @@ import ru.yandex.practicum.filmorate.storage.UserStorage;
 
 import java.sql.Date;
 import java.sql.PreparedStatement;
-import java.sql.Statement;
 import java.util.*;
 
-@Qualifier("userDb")
-@Component
+@Component("userDbStorage")
+@Primary
+@RequiredArgsConstructor
 public class UserDbStorage implements UserStorage {
     private final JdbcTemplate jdbcTemplate;
     private final UserRowMapper mapper;
-
-    public UserDbStorage(JdbcTemplate jdbcTemplate, UserRowMapper mapper) {
-        this.jdbcTemplate = jdbcTemplate;
-        this.mapper = mapper;
-    }
 
     @Override
     public User addUser(User user) {
         GeneratedKeyHolder keyHolder = new GeneratedKeyHolder();
         String insertTableQuery = "INSERT INTO users(name, login, birthday, email)" + "VALUES (?, ?, ?, ?)";
         jdbcTemplate.update(connection -> {
-            PreparedStatement ps = connection.prepareStatement(insertTableQuery, Statement.RETURN_GENERATED_KEYS);
+            PreparedStatement ps = connection.prepareStatement(insertTableQuery, new String[]{"user_id"});
             ps.setString(1, user.getName());
             ps.setString(2, user.getLogin());
             ps.setDate(3, Date.valueOf(user.getBirthday()));
-
-//            if (user.getBirthday() != null) {
-//                ps.setDate(3, Date.valueOf(user.getBirthday()));
-//            } else {
-//                ps.setNull(3, java.sql.Types.DATE);
-//            }
-
             ps.setString(4, user.getEmail());
             return ps;
         }, keyHolder);
 
-//        Number key = keyHolder.getKey();
-//        if (key != null) {
-//            user.setId(key.longValue());
-//        }
         user.setId(Objects.requireNonNull(keyHolder.getKey()).longValue());
         return  user;
     }
@@ -75,55 +60,34 @@ public class UserDbStorage implements UserStorage {
 
     @Override
     public Collection<User> getAllUsers() {
-        List<User> users = jdbcTemplate.query("SELECT * FROM users", mapper);
-        users.forEach(this::loadFriends);
-        return  users;
+        return  jdbcTemplate.query("SELECT * FROM users", mapper);
     }
 
     @Override
     public Optional<User> getById(long id) {
         try {
             User result = jdbcTemplate.queryForObject("SELECT * FROM users WHERE user_id = ?", mapper, id);
-
-            loadFriends(result);
-
-            return Optional.of(result);
-
-        } catch (EmptyResultDataAccessException ignored) {
+            return Optional.ofNullable(result);
+        } catch (EmptyResultDataAccessException e) {
             return Optional.empty();
         }
     }
 
     public void addFriends(long userId, long friendsId) {
-        String insertGenreQuery = "INSERT INTO friends(user_id, friend_id, friendship_status) VALUES(?, ?, ?)";
-        jdbcTemplate.update(insertGenreQuery, userId, friendsId, "UNCONFIRMED");
+        String insertGenreQuery = "INSERT INTO friendships (user_id, friend_id) VALUES(?, ?)";
+        jdbcTemplate.update(insertGenreQuery, userId, friendsId);
     }
 
     public void removeFriends(long userId, long friendsId) {
-        String deleteGenreQuery = "DELETE FROM friends WHERE user_id = ? AND friend_id = ?";
+        String deleteGenreQuery = "DELETE FROM friendships WHERE user_id = ? AND friend_id = ?";
         jdbcTemplate.update(deleteGenreQuery, userId, friendsId);
     }
 
-    public void loadFriends(User user) {
-        String query = "SELECT friend_id FROM friends WHERE user_id = ?";
-        Set<Long> friends = new HashSet<>(
-                jdbcTemplate.queryForList(query, Long.class, user.getId())
-        );
-        user.setFriends(friends);
-    }
-
     @Override
-    public Collection<User> getFriends(long userId) {
+    public List<User> getFriends(long userId) {
         String query = "SELECT u.* FROM users u " +
-                "INNER JOIN friends f ON u.user_id = f.friend_id " +
+                "JOIN friendships f ON u.user_id = f.friend_id " +
                 "WHERE f.user_id = ?";
         return jdbcTemplate.query(query, mapper, userId);
-    }
-
-    public Collection<User> getCommonFriends(long userId, long otherId) {
-        String query = "SELECT u.* FROM users u " +
-                "WHERE u.user_id IN (SELECT friend_id FROM friends WHERE user_id = ?)" +
-                " AND u.user_id IN (SELECT friend_id FROM friends WHERE user_id = ?)";
-        return jdbcTemplate.query(query, mapper, userId, otherId);
     }
 }

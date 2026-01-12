@@ -1,6 +1,8 @@
 package ru.yandex.practicum.filmorate.storage.db;
 
-import org.springframework.beans.factory.annotation.Qualifier;
+import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Primary;
+import org.springframework.core.io.ResourceLoader;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
@@ -14,16 +16,13 @@ import java.sql.PreparedStatement;
 import java.sql.Statement;
 import java.util.*;
 
-@Qualifier("filmsDb")
-@Component
+@Component("filmDbStorage")
+@Primary
+@RequiredArgsConstructor
 public class FilmDbStorage implements FilmStorage {
     private final JdbcTemplate jdbcTemplate;
-    protected final FilmRowMapper mapper;
-
-    public FilmDbStorage(JdbcTemplate jdbcTemplate, FilmRowMapper mapper) {
-        this.jdbcTemplate = jdbcTemplate;
-        this.mapper = mapper;
-    }
+    private final FilmRowMapper mapper;
+    private final ResourceLoader resourceLoader;
 
     @Override
     public Film addFilm(Film film) {
@@ -40,6 +39,7 @@ public class FilmDbStorage implements FilmStorage {
             ps.setInt(5, film.getRatingId());
             return ps;
         }, keyHolder);
+
         film.setId(Objects.requireNonNull(keyHolder.getKey()).longValue());
         saveGenres(film);
         return film;
@@ -72,10 +72,17 @@ public class FilmDbStorage implements FilmStorage {
 
     @Override
     public List<Film> getAllFilms() {
-        List<Film> films = jdbcTemplate.query("SELECT * FROM films", mapper);
-        films.forEach(this::loadGenres);
-        films.forEach(this::loadLikes);
-        return films;
+        return jdbcTemplate.query("SELECT * FROM films", mapper);
+    }
+
+    @Override
+    public List<Film> getPopular(int count) {
+        String sql = "SELECT f. * FROM films f " +
+                "LEFT JOIN likes l ON f.film_id = l.film_id " +
+                "GROUP BY f.film_id " +
+                "ORDER BY COUNT(l.user_id) DESC " +
+                "LIMIT ?";
+        return jdbcTemplate.query(sql, mapper, count);
     }
 
     @Override
@@ -83,12 +90,8 @@ public class FilmDbStorage implements FilmStorage {
         try {
             Film result = jdbcTemplate.queryForObject(
                     "SELECT * FROM films WHERE film_id = ?", mapper, id);
-            if (result != null) {
-                loadLikes(result);
-                loadGenres(result);
-            }
             return Optional.ofNullable(result);
-        } catch (EmptyResultDataAccessException ignored) {
+        } catch (EmptyResultDataAccessException e) {
             return Optional.empty();
         }
     }
@@ -108,14 +111,6 @@ public class FilmDbStorage implements FilmStorage {
         jdbcTemplate.update(query, filmId);
     }
 
-    private void loadLikes(Film film) {
-        String query = "SELECT user_id FROM likes WHERE film_id = ?";
-        Set<Long> likes = new HashSet<>(
-                jdbcTemplate.queryForList(query, Long.class, film.getId())
-        );
-        film.setLikes(likes);
-    }
-
     private void saveGenres(Film film) {
         if (film.getGenreIds() == null || film.getGenreIds().isEmpty())
             return;
@@ -124,16 +119,44 @@ public class FilmDbStorage implements FilmStorage {
                 jdbcTemplate.update(insertGenreQuery, film.getId(), genreId));
     }
 
-    private void loadGenres(Film film) {
-        String loadQuery = "SELECT genre_id FROM film_genres WHERE film_id = ?";
-        Set<Integer> genres = new HashSet<>(
-                jdbcTemplate.queryForList(loadQuery, Integer.class, film.getId())
-        );
-        film.setGenreIds(genres);
-    }
-
     private void deleteGenres(long filmId) {
         String deleteQuery = "DELETE FROM film_genres WHERE film_id = ?";
         jdbcTemplate.update(deleteQuery, filmId);
+    }
+
+    @Override
+    public Map<Long, Set<Integer>> getGenresForFilms(List<Long> filmIds) {
+        if (filmIds.isEmpty()) return Collections.emptyMap();
+
+        String inSql = String.join(",", Collections.nCopies(filmIds.size(), "?"));
+        String sql = "SELECT film_id, genre_id FROM film_genres WHERE film_id IN (" + inSql + ")";
+
+        return jdbcTemplate.query(sql, (rs) -> {
+            Map<Long, Set<Integer>> result = new HashMap<>();
+            while (rs.next()) {
+                long filmId = rs.getLong("film_id");
+                int genreId = rs.getInt("genre_id");
+                result.computeIfAbsent(filmId, k -> new HashSet<>()).add(genreId);
+            }
+            return result;
+        }, filmIds.toArray());
+    }
+
+    @Override
+    public Map<Long, Set<Long>> getLikesForFilms(List<Long> filmIds) {
+        if (filmIds.isEmpty()) return Collections.emptyMap();
+
+        String inSql = String.join(",", Collections.nCopies(filmIds.size(), "?"));
+        String sql = "SELECT film_id, user_id FROM likes WHERE film_id IN (" + inSql + ")";
+
+        return jdbcTemplate.query(sql, (rs) -> {
+            Map<Long, Set<Long>> result = new HashMap<>();
+            while (rs.next()) {
+                long filmId = rs.getLong("film_id");
+                long userId = rs.getLong("user_id");
+                result.computeIfAbsent(filmId, k -> new HashSet<>()).add(userId);
+            }
+            return result;
+        }, filmIds.toArray());
     }
 }
