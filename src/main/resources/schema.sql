@@ -45,7 +45,7 @@ CREATE TABLE IF NOT EXISTS likes (
     PRIMARY KEY (user_id, film_id)
 );
 
-CREATE TABLE IF NOT EXISTS friends (
+CREATE TABLE IF NOT EXISTS friendships (
     user_id INTEGER REFERENCES users(user_id),
     friend_id INTEGER REFERENCES users(user_id),
     friendship_id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
