@@ -14,8 +14,12 @@ public class FilmDto {
     private long id;
 
     private String name;
+
     private String description;
+
     private LocalDate releaseDate;
+
+
     private Integer duration;
 
     @JsonProperty("mpa")
