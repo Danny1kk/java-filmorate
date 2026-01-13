@@ -74,19 +74,19 @@ public class UserDbStorage implements UserStorage {
     }
 
     public void addFriends(long userId, long friendsId) {
-        String insertGenreQuery = "INSERT INTO friendships (user_id, friend_id) VALUES(?, ?)";
+        String insertGenreQuery = "INSERT INTO friends (user_id, friend_id) VALUES(?, ?)";
         jdbcTemplate.update(insertGenreQuery, userId, friendsId);
     }
 
     public void removeFriends(long userId, long friendsId) {
-        String deleteGenreQuery = "DELETE FROM friendships WHERE user_id = ? AND friend_id = ?";
+        String deleteGenreQuery = "DELETE FROM friends WHERE user_id = ? AND friend_id = ?";
         jdbcTemplate.update(deleteGenreQuery, userId, friendsId);
     }
 
     @Override
     public List<User> getFriends(long userId) {
         String query = "SELECT u.* FROM users u " +
-                "JOIN friendships f ON u.user_id = f.friend_id " +
+                "JOIN friends f ON u.user_id = f.friend_id " +
                 "WHERE f.user_id = ?";
         return jdbcTemplate.query(query, mapper, userId);
     }
