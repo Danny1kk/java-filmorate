@@ -1,79 +1,109 @@
 package ru.yandex.practicum.filmorate.service;
 
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import ru.yandex.practicum.filmorate.dal.dto.film.FilmDto;
+import ru.yandex.practicum.filmorate.dal.dto.film.NewFilmRequest;
+import ru.yandex.practicum.filmorate.dal.dto.film.UpdateFilmRequest;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
-import ru.yandex.practicum.filmorate.exception.ValidationException;
+import ru.yandex.practicum.filmorate.mapper.FilmMapper;
 import ru.yandex.practicum.filmorate.model.Film;
-import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
-import ru.yandex.practicum.filmorate.storage.user.UserStorage;
+import ru.yandex.practicum.filmorate.model.Genre;
+import ru.yandex.practicum.filmorate.model.MpaRating;
+import ru.yandex.practicum.filmorate.storage.FilmStorage;
+import ru.yandex.practicum.filmorate.storage.GenreStorage;
+import ru.yandex.practicum.filmorate.storage.RatingStorage;
+import ru.yandex.practicum.filmorate.storage.UserStorage;
 
-import java.time.LocalDate;
 import java.util.*;
 
+@Slf4j
 @Service
+@RequiredArgsConstructor
 public class FilmService {
     private final FilmStorage filmStorage;
     private final UserStorage userStorage;
+    private final RatingStorage mpaStorage;
+    private final GenreStorage genreStorage;
 
-    public FilmService(FilmStorage filmStorage, UserStorage userStorage) {
-        this.filmStorage = filmStorage;
-        this.userStorage = userStorage;
-    }
-
-    public Film addFilm(Film film) {
-        validateFilm(film);
-        return filmStorage.add(film);
-    }
-
-    public Film updateFilm(Film film) {
-        validateFilm(film);
-        getById(film.getId());
-        return filmStorage.update(film);
-    }
-
-    public List<Film> getAllFilms() {
-        return filmStorage.getAll();
-    }
-
-    public Film getById(int id) {
+    private Film getFilmOrThrow(long id) {
         return filmStorage.getById(id)
-                .orElseThrow(() -> new NotFoundException("Фильм с id=" + id + " не найден"));
+                .orElseThrow(() -> new NotFoundException("Фильм с id: " + id + "не найден"));
+    }
+
+    private void checkUserExists(long id) {
+        userStorage.getById(id)
+                .orElseThrow(() -> new NotFoundException("Пользователь с id = " + id + "не найден"));
+    }
+
+    public Collection<FilmDto> getAllFilms() {
+        log.info("Запрос всех фильмов");
+        return loadDetailsAndMapToDto(filmStorage.getAllFilms());
+    }
+
+    public FilmDto addFilm(NewFilmRequest request) {
+        log.info("Добавление нового фильма: {}", request.getName());
+        Film film = FilmMapper.mapToFilm(request);
+        Film savedFilm = filmStorage.addFilm(film);
+        return loadDetailsAndMapToDto(List.of(savedFilm)).get(0);
+    }
+
+    public FilmDto updateFilm(UpdateFilmRequest request) {
+        log.info("Обновление фильма с id = {}", request.getId());
+        getFilmOrThrow(request.getId());
+
+        Film film = FilmMapper.mapToFilm(request);
+        Film updatedFilm = filmStorage.updateFilm(film);
+        return loadDetailsAndMapToDto(List.of(updatedFilm)).get(0);
+    }
+
+    public FilmDto getById(long id) {
+        log.info("Запрос фильма по id = {}", id);
+        Film film = getFilmOrThrow(id);
+        return loadDetailsAndMapToDto(List.of(film)).get(0);
     }
 
     public void addLike(int filmId, int userId) {
-        Film film = getById(filmId);
-        userStorage.getById(userId)
-                .orElseThrow(() -> new NotFoundException("Пользователь с id=" + userId + " не найден"));
-        film.addLike(userId);
+        log.info("Пользователь id = {} ставит лайк фильму id = {}", userId, filmId);
+        getFilmOrThrow(filmId);
+        checkUserExists(userId);
+        filmStorage.addLike(filmId, userId);
     }
 
-    public void removeLike(int filmId, int userId) {
-        Film film = getById(filmId);
-        userStorage.getById(userId)
-                .orElseThrow(() -> new NotFoundException("Пользователь с id=" + userId + " не найден"));
-        film.removeLike(userId);
+    public void removeLike(long filmId, long userId) {
+        log.info("Пользователь id = {} удаляет лайк у фильма id = {}", userId, filmId);
+        getFilmOrThrow(filmId);
+        checkUserExists(userId);
+        filmStorage.removeLike(filmId, userId);
     }
 
-    public List<Film> getPopular(int count) {
-        if (count <= 0) {
-            throw new ValidationException("Параметр count должен быть положительным");
-        }
-        return filmStorage.getPopular(count);
+    public List<FilmDto> getPopular(int count) {
+        log.info("Запрос {} популярных фильмов", count);
+        List<Film> popularFilms = filmStorage.getPopular(count);
+        return loadDetailsAndMapToDto(popularFilms);
     }
 
-    private void validateFilm(Film film) {
-        if (film.getName() == null || film.getName().isBlank()) {
-            throw new ValidationException("Название фильма не может быть пустым");
+    private List<FilmDto> loadDetailsAndMapToDto(List<Film> films) {
+        if (films.isEmpty()) {
+            return List.of();
         }
-        if (film.getDescription() != null && film.getDescription().length() > 200) {
-            throw new ValidationException("Описание не должно превышать 200 символов");
-        }
-        LocalDate minDate = LocalDate.of(1895, 12, 28);
-        if (film.getReleaseDate() == null || film.getReleaseDate().isBefore(minDate)) {
-            throw new ValidationException("Дата релиза должна быть указана и не может быть раньше 28 декабря 1895 года");
-        }
-        if (film.getDuration() <= 0) {
-            throw new ValidationException("Продолжительность фильма должна быть положительной");
-        }
+
+        List<MpaRating> allMpa = mpaStorage.findAll();
+        List<Genre> allGenres = (List<Genre>) genreStorage.getAllGenres();
+
+        List<Long> filmIds = films.stream()
+                .map(Film::getId)
+                .toList();
+
+        Map<Long, Set<Integer>> genresMap = filmStorage.getGenresForFilms(filmIds);
+        Map<Long, Set<Long>> likesMap = filmStorage.getLikesForFilms(filmIds);
+
+        return films.stream()
+                .map(film -> {
+                    film.setGenreIds(genresMap.getOrDefault(film.getId(), Set.of()));
+                    film.setLikes(likesMap.getOrDefault(film.getId(), Set.of()));
+                    return FilmMapper.mapToFilmDto(film, allMpa, allGenres);
+                }).toList();
     }
 }
