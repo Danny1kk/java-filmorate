@@ -22,8 +22,7 @@
 
 #### Получение всех фильмов
 ```sql
-SELECT * 
-FROM films;
+SELECT * FROM films;
 ```
 
 #### Получение пользователя по ID
