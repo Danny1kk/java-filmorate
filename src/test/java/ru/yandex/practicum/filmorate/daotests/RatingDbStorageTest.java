@@ -1,0 +1,44 @@
+package ru.yandex.practicum.filmorate.daotests;
+
+import lombok.RequiredArgsConstructor;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
+import org.springframework.boot.test.autoconfigure.jdbc.JdbcTest;
+import org.springframework.context.annotation.Import;
+import ru.yandex.practicum.filmorate.dal.rowmappers.RatingRowMapper;
+import ru.yandex.practicum.filmorate.model.MpaRating;
+import ru.yandex.practicum.filmorate.storage.db.RatingDbStorage;
+
+import java.util.Optional;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+@JdbcTest
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+@Import({RatingDbStorage.class, RatingRowMapper.class})
+@RequiredArgsConstructor(onConstructor_ = @Autowired)
+class RatingDbStorageTest {
+
+    private final RatingDbStorage ratingDbStorage;
+
+    @Test
+    void testFindRatingById() {
+        Optional<MpaRating> ratingOptional = ratingDbStorage.getById(1);
+
+        assertThat(ratingOptional)
+                .isPresent()
+                .hasValueSatisfying(rating ->
+                        assertThat(rating.getId()).isEqualTo(1)
+                );
+    }
+
+    @Test
+    void testFindAllRatings() {
+        var list = ratingDbStorage.findAll();
+
+        assertThat(list).hasSize(5);
+        assertThat(list.get(0).getId()).isEqualTo(1);
+        assertThat(list.get(4).getId()).isEqualTo(5);
+    }
+}
